@@ -427,24 +427,25 @@ section[data-testid="stSidebar"] .stButton>button{justify-content:flex-start;tex
 .am .status{display:flex;gap:26px;padding:10px 16px;color:var(--mut);background:rgba(9,40,26,.78);border:1px solid rgba(60,200,120,.28);border-radius:12px;flex-wrap:wrap}
 @media(max-width:1100px){.am .mets{grid-template-columns:repeat(2,1fr)}}
 </style>"""
-
 # ---------------- PAGE REGISTRY (single source of truth for navigation) ----------------
 # (icon, title, views/<file>.py without extension, url slug)
+
 PAGES = [
-    ("🏠", "Dashboard",             "page1",  "dashboard"),
-    ("🧠", "AI Command Center",     "page7",  "ai-command-center"),
-    ("📡", "Live IoT Monitoring",   "page8",  "live-iot-monitoring"),
-    ("🌱", "Crop Intelligence",     "page9",  "crop-intelligence"),
-    ("💧", "Irrigation Automation", "page2",  "irrigation-automation"),
-    ("⛅", "Weather & Forecast",    "page10", "weather-forecast"),
-    ("🗺️", "Field Digital Twin",    "page11", "field-digital-twin"),
-    ("📈", "Predictive Analytics",  "page12", "predictive-analytics"),
-    ("🚨", "Alerts & Incidents",    "page3",  "alerts-incidents"),
-    ("📄", "Reports & Insights",    "page5",  "reports-insights"),
-    ("🤖", "AI Farm Assistant",     "page4",  "ai-farm-assistant"),
-    ("📟", "Device Management",     "page13", "device-management"),
-    ("⚙️", "Settings",              "page6",  "settings"),
+    ("🏠", "Dashboard", "Dashboard", "dashboard"),
+    ("🧠", "AI Command Center", "AI Command Center", "ai-command-center"),
+    ("📡", "Live IoT Monitoring", "Live IoT Monitoring", "live-iot-monitoring"),
+    ("🌱", "Crop Intelligence", "Crop Intelligence", "crop-intelligence"),
+    ("💧", "Irrigation Automation", "💧 Irrigation Automation", "irrigation-automation"),
+    ("⛅", "Weather & Forecast", "Weather & Forecast", "weather-forecast"),
+    ("🗺️", "Field Digital Twin", "Field Digital Twin (Beta)", "field-digital-twin"),
+    ("📈", "Predictive Analytics", "Predictive Analytics", "predictive-analytics"),
+    ("🚨", "Alerts & Incidents", "Alerts & Incidents", "alerts-incidents"),
+    ("📄", "Reports & Insights", "Reports & Insights", "reports-insights"),
+    ("🤖", "AI Farm Assistant", "AI Farm Assistant", "ai-farm-assistant"),
+    ("📟", "Device Management", "Device Management", "device-management"),
 ]
+
+NAV = [(ic, n) for ic, n, _, _ in PAGES]
 NAV = [(ic, n) for ic, n, _, _ in PAGES]   # (icon, title) - used by search
 CHIPS = ["Why is my soil moisture low?", "When will it rain?", "How much water do I need?", "What is the crop health status?"]
 FARM_KEYS = ("sm", "t", "h", "rain", "ph", "crop", "stage")
