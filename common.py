@@ -326,23 +326,23 @@ recommendations must contain maximum 4 items.
  
  
 # ==========================================================
-# DEFAULT SESSION STATE
+# DEFAULT STATE
 # ==========================================================
- 
+
 DEFAULTS = dict(
     sm=42,
     t=34,
     h=58,
     rain=20,
     ph=6.8,
- 
+
     crop="Tomato",
     stage="Vegetative",
- 
+
     # Irrigation controls
     zone="Zone 2",
     mins=15,
- 
+
     # Farmer & location
     farmer_name=DEFAULT_FARMER_NAME,
     location_query=DEFAULT_LOCATION,
@@ -350,210 +350,198 @@ DEFAULTS = dict(
     lat=DEFAULT_LAT,
     lon=DEFAULT_LON,
     location_error="",
- 
+
     # Navigation
     goto=None,
- 
+
     # Irrigation state
     irr=False,
     pump_log="",
- 
+
     # Search
     ask=None,
     search="",
     search_ans="",
- 
+
     # AI Assistant
     chat_in="",
     chat_out="",
- 
+
     # Crop Intelligence
     q2="",
     a2="",
- 
+
     # Reports
     rep_out="",
- 
+
     # Data mode
     data_mode="🌐 Live Weather",
- 
+
     # AI Command Center
     cmd_in="",
     cmd_out="",
- 
+
     # Crop Intelligence inputs
     ci_fert="",
     ci_dis="",
- 
+
     # Weather
     wx_out="",
- 
+
     # Predictive Analytics
     pred_out="",
- 
+
     # Plant Info
-    pi_out="",
+    pi_out=""
 )
- 
- 
+
+
 # ==========================================================
-# HELPERS  (NOTE: these were missing in your pasted code,
-# basic versions added so the app runs - replace with yours)
+# REFRESH AI ANALYSIS
 # ==========================================================
- 
-def init_state():
-    for k, v in DEFAULTS.items():
-        st.session_state.setdefault(k, v)
- 
- 
-def farm():
-    s = st.session_state
-    return s.sm, s.t, s.h, s.rain, s.ph, s.crop, s.stage
- 
- 
-@st.cache_data(ttl=600, show_spinner=False)
-def _fetch_weather(lat, lon):
-    params = urlencode({
-        "latitude": lat,
-        "longitude": lon,
-        "current": "temperature_2m,relative_humidity_2m",
-        "hourly": "precipitation_probability,soil_moisture_0_to_1cm",
-        "forecast_days": 1,
-        "timezone": "auto",
-    })
-    req = Request(
-        f"https://api.open-meteo.com/v1/forecast?{params}",
-        headers={"User-Agent": "AgriMindAI"},
-    )
-    with urlopen(req, timeout=10) as r:
-        return json.loads(r.read().decode())
- 
- 
-def weather_summary():
-    try:
-        d = _fetch_weather(st.session_state.lat, st.session_state.lon)
-        cur = d["current"]
-        hourly = d.get("hourly", {})
- 
-        rain_vals = (hourly.get("precipitation_probability") or [0])[:12]
-        soil_vals = hourly.get("soil_moisture_0_to_1cm") or []
- 
-        soil = None
-        if soil_vals and soil_vals[0] is not None:
-            # volumetric fraction (m3/m3) -> approx percent
-            soil = soil_vals[0] * 100
- 
-        return {
-            "temperature": cur["temperature_2m"],
-            "humidity": cur["relative_humidity_2m"],
-            "rain": max(v for v in rain_vals if v is not None),
-            "soil_moisture": soil,
-            "time": cur.get("time", datetime.now().isoformat()),
-        }
-    except Exception:
-        return None
- 
- 
-def satellite_url(lat, lon, date_str):
-    d = 0.25
-    params = urlencode({
-        "REQUEST": "GetSnapshot",
-        "LAYERS": "MODIS_Terra_CorrectedReflectance_TrueColor",
-        "CRS": "EPSG:4326",
-        "TIME": str(date_str)[:10],
-        "BBOX": f"{lat - d},{lon - d},{lat + d},{lon + d}",
-        "FORMAT": "image/jpeg",
-        "WIDTH": 800,
-        "HEIGHT": 500,
-    })
-    return f"https://wvs.earthdata.nasa.gov/api/v1/snapshot?{params}"
- 
- 
-# ==========================================================
-# CALLBACKS
-# ==========================================================
- 
+
 def refresh_analysis():
     """
     Clear cached farm analysis so the next run
     performs a fresh AI analysis.
     """
     analyze_farm.clear()
- 
- 
+
+
+# ==========================================================
+# AI / UI CALLBACKS
+# ==========================================================
+
 def ask_from(key, target):
-    st.session_state.ask = (target, st.session_state[key])
- 
- 
+    st.session_state.ask = (
+        target,
+        st.session_state[key]
+    )
+
+
 def ask_chip(q):
-    st.session_state.ask = ("chat_out", q)
- 
- 
+    st.session_state.ask = (
+        "chat_out",
+        q
+    )
+
+
 def ask_report():
-    st.session_state.ask = ("rep_out", "__report__")
- 
- 
+    st.session_state.ask = (
+        "rep_out",
+        "__report__"
+    )
+
+
 # ==========================================================
-# GET STATE
+# GET CURRENT FARM STATE
 # ==========================================================
- 
+
 def get_state():
+
     init_state()
- 
+
+    # ------------------------------------------------------
     # Get live weather
+    # ------------------------------------------------------
+
     weather = weather_summary()
- 
+
+    # ------------------------------------------------------
     # Current data mode
-    mode = st.session_state.get("data_mode", "🌐 Live Weather")
- 
+    # ------------------------------------------------------
+
+    mode = st.session_state.get(
+        "data_mode",
+        "🌐 Live Weather"
+    )
+
+    # ------------------------------------------------------
     # Update farm values from live weather
+    # ------------------------------------------------------
+
     if weather and mode != "✍️ Manual":
- 
-        st.session_state.t = round(weather["temperature"])
-        st.session_state.h = round(weather["humidity"])
-        st.session_state.rain = round(weather["rain"])
- 
-        # Use Open-Meteo soil moisture if available
+
+        st.session_state.t = round(
+            weather["temperature"]
+        )
+
+        st.session_state.h = round(
+            weather["humidity"]
+        )
+
+        st.session_state.rain = round(
+            weather["rain"]
+        )
+
         if (
             mode == "🌐 Live Weather"
-            and weather.get("soil_moisture") is not None
+            and weather.get("soil_moisture")
+            is not None
         ):
-            st.session_state.sm = round(weather["soil_moisture"])
- 
+            st.session_state.sm = round(
+                weather["soil_moisture"]
+            )
+
+    # ------------------------------------------------------
     # Get current farm values
+    # ------------------------------------------------------
+
     sm, t, h, rain, ph, crop, stage = farm()
- 
+
+    # ------------------------------------------------------
     # Run AI / Rule Engine Analysis
-    res = analyze_farm(sm, t, h, rain, ph, crop, stage, client is not None)
- 
+    # ------------------------------------------------------
+
+    res = analyze_farm(
+        sm,
+        t,
+        h,
+        rain,
+        ph,
+        crop,
+        stage,
+        client is not None
+    )
+
+    # ------------------------------------------------------
     # Satellite date
+    # ------------------------------------------------------
+
     sat_date = (
-        weather.get("time", datetime.now().isoformat())
+        weather.get(
+            "time",
+            datetime.now().isoformat()
+        )
         if weather
         else datetime.now().isoformat()
     )
- 
+
+    # ------------------------------------------------------
     # Final state
+    # ------------------------------------------------------
+
     return {
         "weather": weather,
- 
+
         "sm": sm,
         "t": t,
         "h": h,
         "rain": rain,
         "ph": ph,
- 
+
         "crop": crop,
         "stage": stage,
- 
+
         "res": res,
- 
-        "n_al": len(res["alerts"]),
- 
+
+        "n_al": len(
+            res["alerts"]
+        ),
+
         "sat_url": satellite_url(
             st.session_state.lat,
             st.session_state.lon,
-            sat_date,
-        ),
+            sat_date
+        )
     }
- 
