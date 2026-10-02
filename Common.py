@@ -431,19 +431,19 @@ section[data-testid="stSidebar"] .stButton>button{justify-content:flex-start;tex
 # ---------------- PAGE REGISTRY (single source of truth for navigation) ----------------
 # (icon, title, views/<file>.py without extension, url slug)
 PAGES = [
-    ("🏠", "Dashboard",             "dashboard",             "dashboard"),
-    ("🧠", "AI Command Center",     "ai_command_center",     "ai-command-center"),
-    ("📡", "Live IoT Monitoring",   "live_iot_monitoring",   "live-iot-monitoring"),
-    ("🌱", "Crop Intelligence",     "crop_intelligence",     "crop-intelligence"),
-    ("💧", "Irrigation Automation", "irrigation_automation", "irrigation-automation"),
-    ("⛅", "Weather & Forecast",    "weather_forecast",      "weather-forecast"),
-    ("🗺️", "Field Digital Twin",    "field_digital_twin",    "field-digital-twin"),
-    ("📈", "Predictive Analytics",  "predictive_analytics",  "predictive-analytics"),
-    ("🚨", "Alerts & Incidents",    "alerts_incidents",      "alerts-incidents"),
-    ("📄", "Reports & Insights",    "reports_insights",      "reports-insights"),
-    ("🤖", "AI Farm Assistant",     "ai_farm_assistant",     "ai-farm-assistant"),
-    ("📟", "Device Management",     "device_management",     "device-management"),
-    ("⚙️", "Settings",              "settings",              "settings"),
+    ("🏠", "Dashboard",             "page1",  "dashboard"),
+    ("🧠", "AI Command Center",     "page7",  "ai-command-center"),
+    ("📡", "Live IoT Monitoring",   "page8",  "live-iot-monitoring"),
+    ("🌱", "Crop Intelligence",     "page9",  "crop-intelligence"),
+    ("💧", "Irrigation Automation", "page2",  "irrigation-automation"),
+    ("⛅", "Weather & Forecast",    "page10", "weather-forecast"),
+    ("🗺️", "Field Digital Twin",    "page11", "field-digital-twin"),
+    ("📈", "Predictive Analytics",  "page12", "predictive-analytics"),
+    ("🚨", "Alerts & Incidents",    "page3",  "alerts-incidents"),
+    ("📄", "Reports & Insights",    "page5",  "reports-insights"),
+    ("🤖", "AI Farm Assistant",     "page4",  "ai-farm-assistant"),
+    ("📟", "Device Management",     "page13", "device-management"),
+    ("⚙️", "Settings",              "page6",  "settings"),
 ]
 NAV = [(ic, n) for ic, n, _, _ in PAGES]   # (icon, title) - used by search
 CHIPS = ["Why is my soil moisture low?", "When will it rain?", "How much water do I need?", "What is the crop health status?"]
@@ -453,7 +453,9 @@ DEFAULTS = dict(
     farmer_name=DEFAULT_FARMER_NAME, location_query=DEFAULT_LOCATION, location_name=DEFAULT_LOCATION,
     lat=DEFAULT_LAT, lon=DEFAULT_LON, location_error="",
     goto=None, irr=False, pump_log="", ask=None, search="", search_ans="", chat_in="", chat_out="",
-    q2="", a2="", rep_out="", data_mode="🌐 Live Weather"
+    q2="", a2="", rep_out="", data_mode="🌐 Live Weather",
+    # new pages (page7 - page13): AI answer boxes
+    cmd_in="", cmd_out="", ci_fert="", ci_dis="", wx_out="", pred_out=""
 )
 
 
