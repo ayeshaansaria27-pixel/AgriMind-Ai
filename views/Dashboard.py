@@ -1,20 +1,29 @@
+
+import json
+ 
 import streamlit as st
 import streamlit.components.v1 as components
 from common import (CHIPS, H, alerts_html, answer_box, ask_chip, ask_from, decision_html,
                     get_state, health_html, hero_html, metrics_html, sensors_html, toggle_irr)
-
-# ---- Apni farm ke asli coordinates yahan likhein ----
-FARM_LAT, FARM_LON = 24.8607, 67.0011
-
-
+ 
+# ---- Apne zones ke asli corners yahan likhein: [lat, lon] ----
+# Google Maps satellite par kone par right-click karke lat, lon copy karen.
+# Abhi neeche sirf example values hain, inhein apni farm ke asli coordinates se badal den.
+ZONE_COORDS = {
+    "Zone 1": [[24.86080, 67.00080], [24.86080, 67.00130], [24.86040, 67.00130], [24.86040, 67.00080]],
+    "Zone 2": [[24.86080, 67.00135], [24.86080, 67.00185], [24.86040, 67.00185], [24.86040, 67.00135]],
+    "Zone 3": [[24.86080, 67.00190], [24.86080, 67.00240], [24.86040, 67.00240], [24.86040, 67.00190]],
+}
+ 
+ 
 def _color(m):
     return "#ef4b5a" if m < 20 else "#f0a82a" if m < 40 else "#3ddc84"
-
-
+ 
+ 
 def _status(m):
     return "Critical" if m < 20 else "Needs attention" if m < 40 else "Healthy"
-
-
+ 
+ 
 def live_field(zones, irr, height=330):
     """zones = [(name, crop, moisture), ...]  irr = True/False (pump chal raha hai ya nahi)"""
     cards = ""
@@ -69,37 +78,45 @@ def live_field(zones, irr, height=330):
     </div>
     """
     components.html(html.replace("__H__", str(height)).replace("__CARDS__", cards), height=height + 90)
-
-
-def satellite_map(sm, lat=FARM_LAT, lon=FARM_LON, height=430):
-    color = _color(sm)
+ 
+ 
+def satellite_map(zones, height=430):
+    """zones = [(name, crop, moisture), ...]  -- har zone ke corners ZONE_COORDS se aate hain"""
+    data = [{"name": n, "crop": c, "m": round(m), "color": _color(m),
+             "status": _status(m), "coords": ZONE_COORDS[n]} for n, c, m in zones]
     html = """
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <div id="map" style="height:__H__px;border-radius:12px"></div>
     <script>
-      var lat=__LAT__, lon=__LON__;
-      var map=L.map('map').setView([lat,lon],17);
+      var zones = __DATA__;
+      var map = L.map('map');
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         {maxZoom:19, attribution:'Imagery © Esri'}).addTo(map);
-      for (var i=0;i<3;i++){
-        var x = lon - 0.0006 + i*0.0006;
-        L.rectangle([[lat-0.0002,x],[lat+0.0002,x+0.00055]],
-          {color:'__C__', fillColor:'__C__', fillOpacity:.35, weight:2})
-          .addTo(map).bindTooltip('Zone '+(i+1)+' · moisture __SM__%');
-      }
+      var group = L.featureGroup();
+      zones.forEach(function(z){
+        var p = L.polygon(z.coords, {color:z.color, fillColor:z.color, fillOpacity:.35, weight:2});
+        p.bindTooltip('<b>'+z.name+'</b> ('+z.crop+')<br>Moisture: '+z.m+'% · '+z.status, {sticky:true});
+        p.addTo(group);
+        L.marker(p.getBounds().getCenter(), {icon: L.divIcon({
+          className:'', html:'<div style="color:#fff;font:700 13px sans-serif;text-shadow:0 0 4px #000;white-space:nowrap">'
+          + z.name + ' · ' + z.m + '%</div>'})}).addTo(map);
+      });
+      group.addTo(map);
+      map.fitBounds(group.getBounds(), {padding:[30,30]});
     </script>
     """
-    html = (html.replace("__H__", str(height)).replace("__LAT__", str(lat))
-                .replace("__LON__", str(lon)).replace("__C__", color)
-                .replace("__SM__", str(round(sm))))
+    html = html.replace("__H__", str(height)).replace("__DATA__", json.dumps(data))
     components.html(html, height=height + 10)
-
-
+ 
+ 
 S = get_state()
 sm, t, h, rain, ph, crop, stage = (S[k] for k in ("sm", "t", "h", "rain", "ph", "crop", "stage"))
 res, weather, n_al = S["res"], S["weather"], S["n_al"]
-
+ 
+# Agar har zone ki alag moisture hai to yahan alag values likhein (dono views yehi list use karte hain)
+zones = [("Zone 1", crop, sm), ("Zone 2", crop, sm), ("Zone 3", crop, sm)]
+ 
 left, right = st.columns([7, 3])
 with left:
     H(hero_html(n_al, weather) + metrics_html(sm, t, h, rain, ph))
@@ -109,13 +126,11 @@ with left:
     with b:
         H(health_html(res, crop, stage))
     mode = st.radio("View", ["Live View", "Satellite View"], horizontal=True, label_visibility="collapsed")
-
+ 
     if mode == "Satellite View":
-        satellite_map(sm)
+        satellite_map(zones)
     else:
-        # Agar har zone ki alag moisture hai to yahan alag values likhein
-        live_field([("Zone 1", crop, sm), ("Zone 2", crop, sm), ("Zone 3", crop, sm)],
-                   st.session_state.irr)
+        live_field(zones, st.session_state.irr)
 with right:
     H(decision_html(res, rain))
     st.button("⏹ Stop Irrigation" if st.session_state.irr else "💧 Start Irrigation", key="irr_btn", type="primary", on_click=toggle_irr)
@@ -128,3 +143,4 @@ with right:
                   on_change=ask_from, args=("chat_in", "chat_out"))
     st.button("➤ Ask", key="chat_btn", type="primary", on_click=ask_from, args=("chat_in", "chat_out"))
     answer_box("chat_out")
+ 
