@@ -1,3 +1,4 @@
+
 import time
 
 import streamlit as st
@@ -29,13 +30,13 @@ def add_device():
         new_id = f"{prefix}-{n:02d}"
     devs.append({"id": new_id, "type": typ, "zone": zone, "status": "Online", "battery": 100, "signal": -60,
                  "calibrated": "Not yet", "offset": 5})
-    msg(f"✅ {new_id} ({typ}, {zone}) add ho gaya")
+    msg(f"✅ {new_id} ({typ}, {zone}) has been added")
 
 
 def remove_device():
     did = st.session_state.get("dm_remove")
     st.session_state["_devices"] = [d for d in devs if d["id"] != did]
-    msg(f"🗑️ {did} hata diya gaya")
+    msg(f"🗑️ {did} has been removed")
 
 
 def calibrate():
@@ -43,17 +44,17 @@ def calibrate():
     for d in devs:
         if d["id"] == did:
             d["calibrated"] = time.strftime("%d %b %H:%M")
-    msg(f"🎯 {did} calibrate ho gaya")
+    msg(f"🎯 {did} has been calibrated")
 
 
 def pump_test(on):
     did = st.session_state.get("dm_pump")
     log_pump(f"Pump test {did}: {'ON' if on else 'OFF'}")
-    msg(f"{'▶' if on else '⏹'} {did} test {'ON' if on else 'OFF'} bheja gaya")
+    msg(f"{'▶' if on else '⏹'} {did} test {'ON' if on else 'OFF'} command sent")
 
 
-H('<div class="card"><h3>🔌 Device Management</h3>Devices ki list, add/remove, calibrate aur pump test. '
-  "Baad mein asli ESP32 yahin se jurega.</div>")
+H('<div class="card"><h3>🔌 Device Management</h3>Device list, add/remove, calibrate and pump test. '
+  "A real ESP32 will be connected from here later.</div>")
 
 if st.session_state.get("dm_msg"):
     st.info(st.session_state.pop("dm_msg"))
@@ -65,7 +66,7 @@ st.dataframe(
 
 a, b = st.columns(2)
 with a:
-    H('<div class="card"><h3>➕ Device add karein</h3></div>')
+    H('<div class="card"><h3>➕ Add a device</h3></div>')
     st.selectbox("Type", DEVICE_TYPES, key="dm_type")
     st.selectbox("Zone", ["Zone 1", "Zone 2", "Zone 3", "Farm"], key="dm_zone")
     st.button("➕ Add device", type="primary", on_click=add_device)
@@ -77,7 +78,7 @@ with b:
         st.selectbox("Device (remove)", ids, key="dm_remove")
         st.button("🗑️ Remove", on_click=remove_device)
     else:
-        st.write("Koi device nahi hai.")
+        st.write("There are no devices.")
 
 H('<div class="card"><h3>💧 Pump test</h3></div>')
 if pumps:
@@ -85,6 +86,7 @@ if pumps:
     p1, p2 = st.columns(2)
     p1.button("▶ Test ON", type="primary", on_click=pump_test, args=(True,))
     p2.button("⏹ Test OFF", on_click=pump_test, args=(False,))
-    st.caption("Test ka record Irrigation Automation ke log mein bhi likha jata hai.")
+    st.caption("The test is also recorded in the Irrigation Automation log.")
 else:
-    st.write("Koi Pump Controller add nahi hai.")
+    st.write("No Pump Controller has been added.")
+ 
