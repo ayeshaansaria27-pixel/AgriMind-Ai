@@ -16,6 +16,17 @@ ZONE_COORDS = {
 }
  
  
+# ---- Har zone ki extra info (DEMO values; asli data aane par yahan se update karen) ----
+# last = aakhri baar pani kab diya, trend = pichle ghante mein moisture % kitni badli (+/-)
+ZONE_INFO = {
+    "Zone 1": {"last": "6 hrs ago", "trend": -4},
+    "Zone 2": {"last": "3 hrs ago", "trend": -1},
+    "Zone 3": {"last": "1 hr ago", "trend": 2},
+}
+TARGET_MOISTURE = 60   # is level tak pahunchne ke liye pani chahiye
+LITRES_PER_PCT = 15    # andaza: 1% moisture barhane ko kitne litre (apne zone ke size ke hisaab se badlen)
+ 
+ 
 def _color(m):
     return "#ef4b5a" if m < 20 else "#f0a82a" if m < 40 else "#3ddc84"
  
@@ -39,6 +50,19 @@ def live_field(zones, irr, height=330):
         c = _color(m)
         wilt = "wilt-hard" if m < 20 else "wilt-soft" if m < 40 else "fresh"
         alert = " alert" if m < 20 else ""
+        info = ZONE_INFO.get(name, {})
+        last = info.get("last", "-")
+        tr = info.get("trend")
+        if tr is None:
+            trend = '<span class="tr">-</span>'
+        else:
+            trend = (f'<span class="tr" style="color:{"#3ddc84" if tr > 0 else "#ef4b5a" if tr < 0 else "#8fb7a0"}">'
+                     f'{"▲" if tr > 0 else "▼" if tr < 0 else "▬"} {abs(tr)}%/hr</span>')
+        need = max(0, TARGET_MOISTURE - m) * LITRES_PER_PCT
+        need_txt = f"Needs ~{round(need)} L" if need > 0 else "No water needed"
+        z = name.split()[-1]
+        s1 = max(0, min(100, round(m + 2)))
+        s2 = max(0, min(100, round(m - 2)))
         plants = "".join(
             f'<span style="animation-delay:{(i % 7) * 0.25:.2f}s">'
             f'{"🍅" if (wilt == "fresh" and crop.lower().startswith("tomato") and i % 5 == 2) else "🌿"}</span>'
@@ -55,8 +79,12 @@ def live_field(zones, irr, height=330):
           <div class="gauge" title="Soil moisture {round(m)}%">
             <div class="gfill" style="height:{max(m, 3)}%;background:{c}"></div>
           </div>
-          <div class="dot" style="left:18%;top:44%"></div>
-          <div class="dot" style="left:64%;top:78%;animation-delay:.9s"></div>
+          <div class="dot tl" style="left:18%;top:42%" data-tip="Z{z}-S1 · {s1}% moisture"></div>
+          <div class="dot tr2" style="left:64%;top:70%;animation-delay:.9s" data-tip="Z{z}-S2 · {s2}% moisture"></div>
+          <div class="foot">
+            <div><span>🕒 {last}</span>{trend}</div>
+            <div class="need">💧 {need_txt}</div>
+          </div>
         </div>"""
     html = """
     <style>
@@ -79,7 +107,7 @@ def live_field(zones, irr, height=330):
       .pc small{font-size:11px}
  
       /* paudhe */
-      .plants{position:absolute;top:58px;bottom:10px;left:10px;right:34px;display:grid;
+      .plants{position:absolute;top:58px;bottom:50px;left:10px;right:34px;display:grid;
               grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(5,1fr);place-items:center}
       .plants span{display:inline-block;font-size:26px;transform-origin:bottom center;line-height:1}
       .plants.fresh span{animation:sway 3s ease-in-out infinite}
@@ -88,7 +116,7 @@ def live_field(zones, irr, height=330):
       .plants.wilt-hard span{filter:sepia(.95) saturate(.7) brightness(.85);transform:rotate(38deg) scale(.8)}
  
       /* side moisture gauge */
-      .gauge{position:absolute;right:8px;top:64px;bottom:12px;width:12px;border-radius:99px;
+      .gauge{position:absolute;right:8px;top:64px;bottom:54px;width:12px;border-radius:99px;
              background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.25);overflow:hidden;
              display:flex;align-items:flex-end}
       .gfill{width:100%;border-radius:99px;transition:height .6s}
@@ -98,12 +126,23 @@ def live_field(zones, irr, height=330):
              background:radial-gradient(circle,rgba(170,220,255,.95) 1.5px,transparent 2px) 0 0/16px 22px;
              animation:rain .7s linear infinite}
       @keyframes rain{to{background-position:0 22px}}
-      .badge{position:absolute;bottom:8px;left:8px;font-size:11px;background:rgba(0,0,0,.7);
+      .badge{position:absolute;top:62px;left:8px;font-size:11px;background:rgba(0,0,0,.7);
              padding:3px 8px;border-radius:99px;color:#7fc4ff}
  
       /* sensor dots */
-      .dot{position:absolute;width:9px;height:9px;border-radius:50%;background:#fff;
+      .dot{position:absolute;width:11px;height:11px;border-radius:50%;background:#fff;cursor:help;z-index:5;
            animation:pulse 2.4s infinite}
+      .dot:hover:after{content:attr(data-tip);position:absolute;top:-30px;white-space:nowrap;font-size:11px;
+           background:rgba(0,0,0,.9);color:#e8f5ec;padding:4px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.25)}
+      .dot.tl:hover:after{left:0}
+      .dot.tr2:hover:after{right:0}
+ 
+      /* neeche info strip */
+      .foot{position:absolute;left:0;right:0;bottom:0;padding:6px 12px;background:rgba(8,14,8,.85);
+            border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:#9fc4ad;
+            display:flex;flex-direction:column;gap:2px}
+      .foot>div{display:flex;justify-content:space-between}
+      .foot .need{color:#7fc4ff}
       @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,255,255,.7)}70%,100%{box-shadow:0 0 0 12px rgba(255,255,255,0)}}
  
       .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;color:#8fb7a0;font-size:13px}
