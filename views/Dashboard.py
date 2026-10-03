@@ -10,7 +10,7 @@ from common import (CHIPS, H, alerts_html, answer_box, ask_chip, ask_from, decis
 # ---- Farm ki location: sirf ek point (center) likhna kaafi hai ----
 # Google Maps satellite par kisi bhi kheton wali jagah par right-click karen, lat, lon copy karen.
 # (Apni farm na ho to koi bhi demo khet chun len.)
-FARM_CENTER = (24.8607, 67.0011)   # <-- yahan apne chune hue khet ka lat, lon likhen
+FARM_CENTER = (24.9961, 67.2427)   # Agha Livestock & Agriculture Farm, Gadap Town
  
 ZONE_W_M, ZONE_H_M, GAP_M = 60, 80, 6   # har zone ki chorai, lambai aur zones ke beech gap (meter mein)
  
