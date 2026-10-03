@@ -1,3 +1,4 @@
+
 import numpy as np
 import streamlit as st
 from common import H
@@ -6,7 +7,7 @@ from farm_utils import AMBER, GREEN, RED, readings, thresholds
 S, sm, t, h, rain, ph = readings()
 lo, hi = thresholds()
 
-# 3x3 zones: live values + chhota sa farq har zone mein
+# 3x3 zones: live values + a small variation in each zone
 rng = np.random.default_rng(11)
 off_m, off_t = rng.normal(0, 6, 9), rng.normal(0, 1.5, 9)
 zones = {}
@@ -25,7 +26,7 @@ def pick(i):
 
 
 def color_of(metric, v):
-    """(emoji, hex) heat map ka rang."""
+    """Heat map colour as (emoji, hex)."""
     if metric == "Moisture":
         return ("🔴", RED) if v < lo else ("🟡", AMBER) if v < lo + 10 else ("🔵", "#4da3ff") if v > 80 else ("🟢", GREEN)
     if metric == "Temperature":
@@ -34,7 +35,7 @@ def color_of(metric, v):
 
 
 H('<div class="card"><h3>🗺️ Field Digital Twin <span style="font-size:12px;opacity:.7">(Beta)</span></h3>'
-  "Zone par click karein, heat map badlein aur what-if chala kar dekhein.</div>")
+  "Click a zone, switch the heat map and run a what-if.</div>")
 
 metric = st.radio("Heat map", ["Moisture", "Temperature", "Health"], horizontal=True, key="twin_metric")
 key = metric.lower()
@@ -50,7 +51,7 @@ with left:
             emoji, _ = color_of(metric, v)
             cols[c].button(f"{emoji} Zone {i} · {v:.0f}{unit}", key=f"tw{i}", on_click=pick, args=(i,),
                            type="primary" if st.session_state["twin_zone"] == i else "secondary")
-    st.caption("🟢 theek  🟡 dhyan dein  🔴 khatra  🔵 bohat zyada/kam")
+    st.caption("🟢 OK  🟡 watch  🔴 danger  🔵 too high/low")
 
 z = st.session_state["twin_zone"]
 zd = zones[z]
@@ -62,15 +63,16 @@ with right:
 
 H('<div class="card"><h3>🔮 What-if: irrigation</h3></div>')
 mins = st.slider("Irrigation (minutes)", 5, 60, 20, step=5, key="twin_mins")
-GAIN = 0.45  # taqreeban % moisture per minute (andaza)
+GAIN = 0.45  # approx. % moisture per minute (estimate)
 new_m = min(95.0, zd["moisture"] + mins * GAIN)
 w1, w2 = st.columns(2)
-w1.metric(f"Zone {z} moisture {mins} min baad", f"{new_m:.0f}%", f"{new_m - zd['moisture']:+.0f}%")
+w1.metric(f"Zone {z} moisture {mins} min later", f"{new_m:.0f}%", f"{new_m - zd['moisture']:+.0f}%")
 with w2:
     if new_m > hi + 15:
-        st.warning("Zyada paani — ghar-ghar jama hone ka khatra.")
+        st.warning("Too much water — risk of waterlogging.")
     elif new_m >= hi:
-        st.success("Moisture behtareen range mein pahunch jayegi.")
+        st.success("Moisture will reach the optimal range.")
     else:
-        st.info(f"Abhi bhi {hi}% se kam rahegi — waqt barhayen.")
-st.caption("Andaza: 1 minute irrigation ≈ 0.45% moisture. Asli zone sensors lagne par ye behtar hoga.")
+        st.info(f"Still below {hi}% — increase the duration.")
+st.caption("Estimate: 1 minute of irrigation ≈ 0.45% moisture. This will improve once real zone sensors are installed.")
+ 
