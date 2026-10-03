@@ -1,3 +1,4 @@
+
 import time
 from datetime import datetime
 
@@ -12,7 +13,7 @@ irr = bool(st.session_state.get("irr", False))
 n_al = int(num(S["n_al"]))
 
 if "_cmd_log" not in st.session_state:
-    st.session_state["_cmd_log"] = [f"{datetime.now():%H:%M:%S} System ready — saare agents standby par hain"]
+    st.session_state["_cmd_log"] = [f"{datetime.now():%H:%M:%S} System ready — all agents are on standby"]
 
 
 def log(msg):
@@ -27,7 +28,7 @@ def run_all():
     st.session_state["_cmd_run"] = True
 
 
-# ---- tomorrow ki barish ka imkaan
+# ---- chance of rain tomorrow
 rain_prob = None
 if fc is not None and len(fc[0]) > 1:
     rain_prob = int(fc[0]["precipitation_probability_max"].iloc[1])
@@ -49,21 +50,21 @@ crop_conf = conf_from(abs(score - 62))
 if rain_prob is None:
     wx_dec, wx_col, wx_conf = "Forecast unavailable", AMBER, 40
 elif rain_hold:
-    wx_dec, wx_col = f"Barish ka imkaan {rain_prob}% — irrigation rokein", AMBER
+    wx_dec, wx_col = f"{rain_prob}% chance of rain — hold irrigation", AMBER
     wx_conf = int(min(95, 50 + abs(rain_prob - 50) * 0.9))
 else:
-    wx_dec, wx_col = f"Mausam saaf (barish {rain_prob}%)", GREEN
+    wx_dec, wx_col = f"Clear weather ({rain_prob}% rain)", GREEN
     wx_conf = int(min(95, 50 + abs(rain_prob - 50) * 0.9))
 
 # ---- 3. Irrigation Agent
 if sm < lo and rain_hold and sm > lo - 10:
-    action, irr_dec, irr_col = "hold", "Wait — barish aane wali hai", AMBER
+    action, irr_dec, irr_col = "hold", "Wait — rain is expected", AMBER
 elif sm < lo:
     action, irr_dec, irr_col = "start", f"Start irrigation (moisture {sm:.0f}% < {lo}%)", RED
 elif sm >= hi:
-    action, irr_dec, irr_col = "stop", f"Irrigation band (moisture {sm:.0f}% ≥ {hi}%)", GREEN
+    action, irr_dec, irr_col = "stop", f"Irrigation stopped (moisture {sm:.0f}% ≥ {hi}%)", GREEN
 else:
-    action, irr_dec, irr_col = "hold", f"Hold — moisture theek ({sm:.0f}%)", GREEN
+    action, irr_dec, irr_col = "hold", f"Hold — moisture is fine ({sm:.0f}%)", GREEN
 irr_conf = conf_from(min(abs(sm - lo), abs(sm - hi)) * 2)
 
 # ---- 4. Risk Agent
@@ -78,8 +79,8 @@ else:
 risk_conf = conf_from(abs(risk - 40) * 0.8)
 
 # ---- 5. Farm Assistant
-ast_dec = "Sab theek hai" if (score >= 75 and risk < 25) else "Action zaroori hai"
-ast_col = GREEN if ast_dec == "Sab theek hai" else AMBER
+ast_dec = "All good" if (score >= 75 and risk < 25) else "Action needed"
+ast_col = GREEN if ast_dec == "All good" else AMBER
 ast_conf = int((crop_conf + wx_conf + irr_conf + risk_conf) / 4)
 
 agents = [
@@ -96,20 +97,20 @@ if auto:
     if action == "start" and not irr:
         toggle_irr()
         irr = True
-        log("Auto Mode: Irrigation Agent ne irrigation SHURU kar di")
+        log("Auto Mode: Irrigation Agent STARTED irrigation")
     elif action == "stop" and irr:
         toggle_irr()
         irr = False
-        log("Auto Mode: Irrigation Agent ne irrigation BAND kar di")
+        log("Auto Mode: Irrigation Agent STOPPED irrigation")
 
 # ---- Run all agents
 if st.session_state.pop("_cmd_run", False):
-    steps = [("Crop Health Agent", "sensor data analyse kar raha hai…"),
-             ("Weather Agent", "forecast check kar raha hai…"),
-             ("Irrigation Agent", "moisture aur rules compare kar raha hai…"),
-             ("Risk Agent", "risk score nikal raha hai…"),
-             ("Farm Assistant", "final mashwara tayyar kar raha hai…")]
-    with st.spinner("Agents chal rahe hain…"):
+    steps = [("Crop Health Agent", "analysing sensor data…"),
+             ("Weather Agent", "checking the forecast…"),
+             ("Irrigation Agent", "comparing moisture against the rules…"),
+             ("Risk Agent", "calculating the risk score…"),
+             ("Farm Assistant", "preparing the final recommendation…")]
+    with st.spinner("Agents are running…"):
         for n_, m_ in steps:
             log(f"{n_}: {m_}")
             time.sleep(0.3)
@@ -117,8 +118,8 @@ if st.session_state.pop("_cmd_run", False):
         log(f"{name} → {dec} ({conf}%)")
 
 # ---- UI
-H('<div class="card"><h3>🧠 AI Command Center</h3>5 AI agents aapke farm ke live data par faisle lete hain. '
-  "Auto Mode on karein to AI khud irrigation shuru ya band karega.</div>")
+H('<div class="card"><h3>🧠 AI Command Center</h3>5 AI agents make decisions from live farm data. '
+  "Turn on Auto Mode and the AI will start or stop irrigation by itself.</div>")
 
 c1, c2, c3 = st.columns([2, 2, 3])
 with c1:
@@ -126,7 +127,7 @@ with c1:
 with c2:
     st.button("▶ Run all agents now", type="primary", on_click=run_all)
 with c3:
-    st.caption(f"Irrigation abhi: {'ON 💧' if irr else 'OFF'}  •  Rules: start < {lo}%, stop ≥ {hi}%")
+    st.caption(f"Irrigation now: {'ON 💧' if irr else 'OFF'}  •  Rules: start < {lo}%, stop ≥ {hi}%")
 
 cols = st.columns(5)
 for col, (icon, name, dec, conf, color) in zip(cols, agents):
@@ -142,8 +143,9 @@ lines = "<br>".join(reversed(st.session_state["_cmd_log"][-12:]))
 H(card_html("📜 Live Activity Log",
             f'<div style="font-family:monospace;font-size:12px;line-height:1.7">{lines}</div>'))
 
-H(card_html("💬 Command Center se poochen", "Koi bhi sawal poochen, jawab current sensor values ke hisaab se aayega."))
-st.text_input("Command", key="cmd_in", placeholder="Kya aaj irrigation karni chahiye?", label_visibility="collapsed",
+H(card_html("💬 Ask the Command Center", "Ask any question; the answer is based on the current sensor values."))
+st.text_input("Command", key="cmd_in", placeholder="Should I irrigate today?", label_visibility="collapsed",
               on_change=ask_from, args=("cmd_in", "cmd_out"))
 st.button("➤ Ask", key="cmd_btn", type="primary", on_click=ask_from, args=("cmd_in", "cmd_out"))
 answer_box("cmd_out")
+ 
