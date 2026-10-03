@@ -1,3 +1,4 @@
+
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -6,10 +7,10 @@ from farm_utils import ask_with, get_forecast, next_24h, readings, thresholds
 
 S, sm, t, h, rain, ph = readings()
 lo, hi = thresholds()
-GAIN = 0.45  # % moisture per minute irrigation (andaza)
+GAIN = 0.45  # % moisture per minute of irrigation (estimate)
 
-H('<div class="card"><h3>🔮 Predictive Analytics</h3>Agle 24 ghante ki moisture prediction (mausam aur sensors ke mutabiq).</div>')
-plus20 = st.checkbox("Agar abhi 20 minute irrigation karun to?", key="pred_irr")
+H('<div class="card"><h3>🔮 Predictive Analytics</h3>Moisture prediction for the next 24 hours (based on weather and sensors).</div>')
+plus20 = st.checkbox("What if I irrigate for 20 minutes now?", key="pred_irr")
 
 fc = get_forecast()
 if fc is not None:
@@ -21,7 +22,7 @@ if fc is not None:
 else:
     labels = list(pd.date_range(pd.Timestamp.now().floor("h"), periods=24, freq="h").strftime("%a %H:%M"))
     temps, hums, rains = [t] * 24, [h] * 24, [0.0] * 24
-    st.info("Forecast nahi mili — sirf maujooda sensor values se andaza lagaya gaya hai.")
+    st.info("Forecast not available — estimate is based only on current sensor values.")
 
 n = min(24, len(labels), len(temps))
 m = sm + (20 * GAIN if plus20 else 0)
@@ -40,18 +41,19 @@ c1, c2, c3 = st.columns(3)
 if below:
     i0 = below[0]
     mins = max(5, int(round((hi - preds[i0]) / GAIN / 5.0)) * 5)
-    c1.metric("Paani kab dena hai", labels[i0], f"~{mins} min irrigation", delta_color="off")
+    c1.metric("When to water", labels[i0], f"~{mins} min irrigation", delta_color="off")
 else:
-    c1.metric("Paani kab dena hai", "24 ghante mein zaroorat nahi")
+    c1.metric("When to water", "Not needed in the next 24 hours")
 
 risk = (stress_h * 4) + (25 if t > 38 else 0) + (15 if ph < 6 or ph > 7.5 else 0)
 c2.metric("Risk", "Low" if risk < 25 else "Medium" if risk < 55 else "High", f"{min(100, risk)}/100", delta_color="off")
 yield_idx = max(40, 100 - stress_h * 1.2 - max(0, t - 35) * 1.5 - max(0, 6 - ph) * 8 - max(0, ph - 7.5) * 8)
 c3.metric("Yield index (relative)", f"{yield_idx:.0f}%")
-st.caption("Ye andaze simple formula par hain (garmi, nami, barish se moisture ka nuqsan). Asli paidawar ka daawa nahi.")
+st.caption("These estimates use a simple formula (moisture loss from heat, humidity and rain). Not a claim about actual yield.")
 
-st.button("🤖 AI se tafseel", type="primary", on_click=ask_with,
-          args=(f"Agle 24 ghante ki moisture prediction: abhi {sm:.0f}% se {preds[-1]:.0f}% tak. Limit {lo}%. "
-                f"{'Moisture limit se neeche jayegi.' if below else 'Limit se neeche nahi jayegi.'} "
-                "Is ka matlab aur mujhe kya karna chahiye, chhote bullet points mein batayen.", "pred_out"))
+st.button("🤖 AI details", type="primary", on_click=ask_with,
+          args=(f"Moisture prediction for the next 24 hours: from {sm:.0f}% now to {preds[-1]:.0f}%. Limit {lo}%. "
+                f"{'Moisture will drop below the limit.' if below else 'It will not drop below the limit.'} "
+                "What does this mean and what should I do? Answer in short bullet points.", "pred_out"))
 answer_box("pred_out")
+ 
