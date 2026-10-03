@@ -1,19 +1,38 @@
 
 import json
+import math
  
 import streamlit as st
 import streamlit.components.v1 as components
 from common import (CHIPS, H, alerts_html, answer_box, ask_chip, ask_from, decision_html,
                     get_state, health_html, hero_html, metrics_html, sensors_html, toggle_irr)
  
-# ---- Apne zones ke asli corners yahan likhein: [lat, lon] ----
-# Google Maps satellite par kone par right-click karke lat, lon copy karen.
-# Abhi neeche sirf example values hain, inhein apni farm ke asli coordinates se badal den.
-ZONE_COORDS = {
-    "Zone 1": [[24.86080, 67.00080], [24.86080, 67.00130], [24.86040, 67.00130], [24.86040, 67.00080]],
-    "Zone 2": [[24.86080, 67.00135], [24.86080, 67.00185], [24.86040, 67.00185], [24.86040, 67.00135]],
-    "Zone 3": [[24.86080, 67.00190], [24.86080, 67.00240], [24.86040, 67.00240], [24.86040, 67.00190]],
-}
+# ---- Farm ki location: sirf ek point (center) likhna kaafi hai ----
+# Google Maps satellite par kisi bhi kheton wali jagah par right-click karen, lat, lon copy karen.
+# (Apni farm na ho to koi bhi demo khet chun len.)
+FARM_CENTER = (24.8607, 67.0011)   # <-- yahan apne chune hue khet ka lat, lon likhen
+ 
+ZONE_W_M, ZONE_H_M, GAP_M = 60, 80, 6   # har zone ki chorai, lambai aur zones ke beech gap (meter mein)
+ 
+ 
+def _make_zones(center, names=("Zone 1", "Zone 2", "Zone 3")):
+    """center ke ird gird teen zones barabar barabar side by side bana deta hai"""
+    lat, lon = center
+    dlat = lambda m: m / 111320
+    dlon = lambda m: m / (111320 * math.cos(math.radians(lat)))
+    total_w = len(names) * ZONE_W_M + (len(names) - 1) * GAP_M
+    out = {}
+    for i, n in enumerate(names):
+        west = lon - dlon(total_w / 2) + dlon(i * (ZONE_W_M + GAP_M))
+        east = west + dlon(ZONE_W_M)
+        north, south = lat + dlat(ZONE_H_M / 2), lat - dlat(ZONE_H_M / 2)
+        out[n] = [[north, west], [north, east], [south, east], [south, west]]
+    return out
+ 
+ 
+ZONE_COORDS = _make_zones(FARM_CENTER)
+# Agar zones ki shape alag chahiye to upar wali line hata kar apne corners khud likh den:
+# ZONE_COORDS = {"Zone 1": [[lat, lon], [lat, lon], [lat, lon], [lat, lon]], ...}
  
  
 # ---- Har zone ki extra info (DEMO values; asli data aane par yahan se update karen) ----
