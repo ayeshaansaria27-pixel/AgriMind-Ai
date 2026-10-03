@@ -17,12 +17,12 @@ from farm_utils import ask_with, num, readings
  
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
  
-# Qwen 3.8 27B multimodal hai (image + text), JSON mode support karta hai
+# Qwen 3.8 27B is multimodal (image + text) and supports JSON mode
 VISION_MODEL = "qwen/qwen3.8-27b"
  
  
 def _parse_json(text: str) -> dict:
-    """Model ke jawab se JSON nikalta hai (thinking/extra text ho to bhi chalega)."""
+    """Extracts JSON from the model response (works even with thinking/extra text)."""
     text = re.sub(r"<think>.*?</think>", "", text or "", flags=re.DOTALL).strip()
     try:
         return json.loads(text)
@@ -141,7 +141,7 @@ def status(v, lo_, hi_):
  
 H(
     f'<div class="card"><h3>🌾 Crop Intelligence</h3>'
-    f'Fasal: <b>{crop}</b> • Stage: <b>{stage}</b></div>'
+    f'Crop: <b>{crop}</b> • Stage: <b>{stage}</b></div>'
 )
  
  
@@ -192,13 +192,13 @@ with c2:
     )
  
     st.metric(
-        "Harvest ka andaza",
+        "Estimated harvest",
         harvest.strftime("%d %b %Y"),
-        f"~{days_left} din baqi",
+        f"~{days_left} days left",
         delta_color="off",
     )
  
-    st.caption("Andaza fasal ke aam growth cycle par mabni hai.")
+    st.caption("Estimate is based on the crop's typical growth cycle.")
  
  
 # ==========================================================
@@ -216,7 +216,7 @@ H('<div class="card"><h3>🧪 Fertilizer & Disease risk</h3></div>')
 d1, d2 = st.columns(2)
  
 d1.metric(
-    "Fungal disease risk (humidity/temp se)",
+    "Fungal disease risk (from humidity/temp)",
     fungal
 )
  
@@ -231,7 +231,7 @@ d2.metric(
 # ==========================================================
  
 ctx = (
-    f"Fasal: {crop}, stage: {stage}, "
+    f"Crop: {crop}, stage: {stage}, "
     f"soil moisture {sm:.0f}%, temperature {t:.1f}C, "
     f"humidity {h:.0f}%, pH {ph:.1f}."
 )
@@ -245,8 +245,8 @@ with b1:
         on_click=ask_with,
         args=(
             ctx
-            + " Is stage par kaun si khaad (NPK), kitni miqdar mein "
-              "aur kab dalni chahiye? Chhote bullet points mein batayen.",
+            + " Which fertilizer (NPK) should be applied at this stage, "
+              "in what quantity, and when? Answer in short bullet points.",
             "ci_fert",
         ),
     )
@@ -261,8 +261,8 @@ with b2:
         on_click=ask_with,
         args=(
             ctx
-            + " Is mausam mein kin bimariyon ya keeron ka khatra hai "
-              "aur bachao kaise karein? Chhote bullet points mein batayen.",
+            + " Which diseases or pests are a risk in this weather, "
+              "and how can they be prevented? Answer in short bullet points.",
             "ci_dis",
         ),
     )
@@ -275,8 +275,8 @@ with b2:
 # ==========================================================
  
 H(
-    '<div class="card"><h3>📷 Patte ki photo se bimari detect karein</h3>'
-    'Photo upload karein ya camera se len, phir Detect dabayen.</div>'
+    '<div class="card"><h3>📷 Detect disease from a leaf photo</h3>'
+    'Upload a photo or take one with the camera, then press Detect.</div>'
 )
  
 src = st.radio(
@@ -313,7 +313,7 @@ if img is not None:
         key="leaf_btn",
     ):
  
-        with st.spinner("AI photo ka tajziya kar raha hai…"):
+        with st.spinner("AI is analyzing the photo…"):
  
             try:
                 result = analyze_leaf(
@@ -323,14 +323,14 @@ if img is not None:
  
                 st.session_state["ci_leaf_result"] = result
  
-                # Field View ke liye status save
+                # Save status for Field View
                 st.session_state[f"status_{crop}"] = result["status"]
  
             except Exception as e:
  
                 st.error(
-                    "AI analysis mein problem aa gayi. "
-                    "API key aur image check karein."
+                    "There was a problem with the AI analysis. "
+                    "Please check the API key and the image."
                 )
                 st.caption(f"Detail: {e}")
  
@@ -377,4 +377,3 @@ if result:
         f"💡 **Advice:** "
         f"{result.get('advice', 'No advice available')}"
     )
- 
