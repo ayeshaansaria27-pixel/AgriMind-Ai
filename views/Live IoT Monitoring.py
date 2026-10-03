@@ -5,7 +5,7 @@ from farm_utils import devices_df, get_history, readings
 S, sm, t, h, rain, ph = readings()
 df = devices_df(only_sensors=True)
 
-H('<div class="card"><h3>📡 Live IoT Monitoring</h3>Saare sensors ki live halat: status, battery, signal aur taza readings.</div>')
+H('<div class="card"><h3>📡 Live IoT Monitoring</h3>Live state of all sensors: status, battery, signal and latest readings.</div>')
 
 m1, m2, m3, m4 = st.columns(4)
 m1.metric("Total sensors", len(df))
@@ -27,4 +27,4 @@ with a:
 with b:
     H('<div class="card"><h3>🌡️ Temperature (live)</h3></div>')
     st.line_chart(hist[["Temperature (°C)"]], color="#ff8c42")
-st.caption("Har refresh par chart mein nayi reading jud jati hai.")
+st.caption("A new reading is added to the chart on every refresh.")
