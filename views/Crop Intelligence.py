@@ -378,4 +378,3 @@ if result:
         f"{result.get('advice', 'No advice available')}"
     )
  
- IS FILE MAI KHUC WORDING ROMAN URDU MAI HAI USSAI ENGLISH MAI CONVERT KRO
