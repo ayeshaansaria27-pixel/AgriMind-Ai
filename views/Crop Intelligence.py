@@ -63,6 +63,7 @@ def analyze_leaf(image_bytes: bytes, crop: str) -> dict:
             }
         ],
         temperature=0.2,
+        max_tokens=900,
         response_format={"type": "json_object"},
     )
  
